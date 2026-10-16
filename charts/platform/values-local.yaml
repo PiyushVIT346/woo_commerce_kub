@@ -1,0 +1,13 @@
+# Local k3d: ports 80 -> host 8080; *.localtest.me resolves to 127.0.0.1
+images:
+  registry: "platform/"
+  tag: dev
+  pullPolicy: IfNotPresent
+urls:
+  shop: http://shop.localtest.me:8080
+  dashboard: http://admin.localtest.me:8080
+ingress:
+  className: traefik
+  tls: { enabled: false }
+gateway:
+  replicas: 1

@@ -1,0 +1,12 @@
+{{- define "platform.wooEnv" -}}
+- name: PORT
+  value: "3000"
+- name: WOOCOMMERCE_URL
+  value: http://wordpress
+- name: STORE_TIMEZONE
+  value: {{ .Values.wordpress.timezone | quote }}
+{{ include "platform.env" (dict "root" . "name" "WOO_CONSUMER_KEY" "key" "woo-consumer-key") }}
+{{ include "platform.env" (dict "root" . "name" "WOO_CONSUMER_SECRET" "key" "woo-consumer-secret") }}
+{{ include "platform.env" (dict "root" . "name" "MCP_AUTH_TOKEN" "key" "upstream-token") }}
+{{- end -}}
+{{ include "platform.app" (dict "root" . "name" "woo-mcp" "component" "upstream" "image" "woo-mcp" "port" 3000 "uid" 1000 "env" (include "platform.wooEnv" .) "resources" .Values.wooMcp.resources) }}

@@ -1,0 +1,86 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: wp-bootstrap
+data:
+  bootstrap.sh: |
+    set -e
+    echo "waiting for wp-config.php"
+    until [ -f /var/www/html/wp-config.php ]; do sleep 3; done
+    if ! wp core is-installed 2>/dev/null; then
+      for i in $(seq 1 60); do
+        wp core install --url="$WP_URL" --title="$WP_TITLE" --admin_user="$WP_ADMIN_USER" \
+          --admin_password="$WP_ADMIN_PASSWORD" --admin_email="$WP_ADMIN_EMAIL" --skip-email && break
+        echo "install attempt $i failed, retrying"; sleep 5
+      done
+    fi
+    wp core is-installed
+    wp plugin is-installed woocommerce || wp plugin install woocommerce --activate
+    wp plugin is-active woocommerce || wp plugin activate woocommerce
+    wp option update timezone_string "$TZ_STRING"
+    wp rewrite structure '/%postname%/' --hard
+    wp option update woocommerce_currency "$CURRENCY"
+    wp option update woocommerce_default_country "US:CA"
+    wp option update woocommerce_coming_soon no
+    wp option update woocommerce_store_pages_only no
+    wp option update woocommerce_cod_settings '{"enabled":"yes","title":"Cash on delivery","description":"Pay with cash on delivery.","enable_for_methods":[],"enable_for_virtual":"yes"}' --format=json
+    if [ "$(wp wc shipping_zone_method list 0 --user=1 --format=count)" = "0" ]; then
+      wp wc shipping_zone_method create 0 --method_id=free_shipping --user=1
+    fi
+    if [ "$(wp wc product list --user=1 --format=count)" = "0" ]; then
+      wp wc product create --name="Sample T-Shirt" --type=simple --regular_price=19.99 --status=publish --user=1
+    fi
+    # REST API key for the MCP server: the key/secret come from the chart Secret, so no Secret-writing RBAC is needed.
+    wp eval '
+      global $wpdb; $t = $wpdb->prefix . "woocommerce_api_keys";
+      $ck = getenv("WOO_CK"); $cs = getenv("WOO_CS");
+      $wpdb->delete($t, ["description" => "mcp-gateway"]);
+      $wpdb->insert($t, ["user_id" => 1, "description" => "mcp-gateway", "permissions" => "read_write",
+        "consumer_key" => wc_api_hash($ck), "consumer_secret" => $cs, "truncated_key" => substr($ck, -7)]);
+      echo "api key installed\n";'
+    echo "bootstrap complete"
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: wp-bootstrap
+  annotations:
+    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook-delete-policy: before-hook-creation
+spec:
+  backoffLimit: 3
+  activeDeadlineSeconds: 1500
+  template:
+    spec:
+      restartPolicy: OnFailure
+      securityContext:
+        runAsUser: 33
+        runAsGroup: 33
+      containers:
+        - name: wpcli
+          image: wordpress:cli
+          command: ["sh", "/scripts/bootstrap.sh"]
+          env:
+            {{- include "platform.wpEnv" . | nindent 12 }}
+            - { name: HOME, value: /tmp }
+            - { name: WP_CLI_CACHE_DIR, value: /tmp/wpcli }
+            - { name: WP_URL, value: {{ .Values.urls.shop | quote }} }
+            - { name: WP_TITLE, value: {{ .Values.wordpress.title | quote }} }
+            - { name: WP_ADMIN_USER, value: {{ .Values.wordpress.adminUser | quote }} }
+            - { name: WP_ADMIN_EMAIL, value: {{ .Values.wordpress.adminEmail | quote }} }
+            - { name: TZ_STRING, value: {{ .Values.wordpress.timezone | quote }} }
+            - { name: CURRENCY, value: {{ .Values.wordpress.currency | quote }} }
+            {{- include "platform.env" (dict "root" . "name" "WP_ADMIN_PASSWORD" "key" "wp-admin-password") | nindent 12 }}
+            {{- include "platform.env" (dict "root" . "name" "WOO_CK" "key" "woo-consumer-key") | nindent 12 }}
+            {{- include "platform.env" (dict "root" . "name" "WOO_CS" "key" "woo-consumer-secret") | nindent 12 }}
+          resources:
+            requests: { cpu: 100m, memory: 192Mi }
+            limits: { cpu: "1", memory: 768Mi }
+          volumeMounts:
+            - { name: data, mountPath: /var/www/html }
+            - { name: scripts, mountPath: /scripts }
+      volumes:
+        - name: data
+          persistentVolumeClaim: { claimName: wordpress-data }
+        - name: scripts
+          configMap: { name: wp-bootstrap }

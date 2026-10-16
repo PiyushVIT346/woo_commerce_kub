@@ -1,0 +1,28 @@
+# Production-like VPS (k3s). Edit hosts, registry and tag. Secrets: use existingSecret or --set at deploy time.
+images:
+  registry: "ghcr.io/YOUR-ORG/"
+  tag: "1.0.0"
+  pullPolicy: IfNotPresent
+urls:
+  shop: https://shop.example.com
+  dashboard: https://admin.example.com
+ingress:
+  className: traefik
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+  tls: { enabled: true, secretName: platform-tls }
+storage:
+  className: local-path
+  mariadb: 10Gi
+  wordpress: 20Gi
+  postgres: 5Gi
+wordpress:
+  title: My Store
+  adminEmail: you@example.com
+  timezone: Asia/Kolkata
+  resources: { requests: { cpu: 250m, memory: 512Mi }, limits: { cpu: "2", memory: 1536Mi } }
+mariadb:
+  resources: { requests: { cpu: 250m, memory: 512Mi }, limits: { cpu: "2", memory: 1536Mi } }
+gateway:
+  replicas: 2
+  adminEmail: you@example.com

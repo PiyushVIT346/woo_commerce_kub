@@ -1,0 +1,17 @@
+{{- if .Values.networkPolicy.enabled }}
+# Upstream MCP servers accept traffic only from the gateway pods (and have no Ingress at all).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: upstream-from-gateway-only
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/component: upstream
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: gateway
+{{- end }}

@@ -1,0 +1,67 @@
+images:
+  registry: ""          # e.g. "ghcr.io/your-org/" (keep trailing slash)
+  tag: dev
+  pullPolicy: IfNotPresent
+
+# Use your own pre-created Secret instead of the chart-generated one (see README for required keys).
+existingSecret: ""
+secrets:
+  llmApiKey: ""         # pass with --set secrets.llmApiKey=...  (never commit)
+
+urls:
+  shop: http://shop.localtest.me:8080
+  dashboard: http://admin.localtest.me:8080
+
+ingress:
+  className: traefik
+  annotations: {}
+  tls:
+    enabled: false
+    secretName: platform-tls
+
+storage:
+  className: ""
+  mariadb: 2Gi
+  wordpress: 5Gi
+  postgres: 1Gi
+
+networkPolicy:
+  enabled: true
+
+mariadb:
+  image: mariadb:11.4
+  resources: { requests: { cpu: 100m, memory: 256Mi }, limits: { cpu: "1", memory: 768Mi } }
+postgres:
+  image: postgres:16-alpine
+  resources: { requests: { cpu: 50m, memory: 128Mi }, limits: { cpu: 500m, memory: 384Mi } }
+
+wordpress:
+  image: wordpress:apache
+  title: Demo Store
+  adminUser: admin
+  adminEmail: admin@example.com
+  timezone: UTC
+  currency: USD
+  resources: { requests: { cpu: 100m, memory: 256Mi }, limits: { cpu: "1", memory: 768Mi } }
+
+wooMcp:
+  resources: { requests: { cpu: 20m, memory: 64Mi }, limits: { cpu: 300m, memory: 192Mi } }
+demoMcp:
+  resources: { requests: { cpu: 20m, memory: 64Mi }, limits: { cpu: 200m, memory: 128Mi } }
+
+gateway:
+  replicas: 1
+  adminEmail: admin@example.com
+  callTimeoutMs: 20000
+  llm:
+    baseUrl: https://api.groq.com/openai/v1
+    model: llama-3.3-70b-versatile
+  seedServers:
+    - { slug: woocommerce, name: "WooCommerce Store", url: "http://woo-mcp:3000/mcp" }
+    - { slug: notes, name: "Notes (demo)", url: "http://demo-notes:3000/mcp" }
+    - { slug: clock, name: "Clock (demo)", url: "http://demo-clock:3000/mcp" }
+  resources: { requests: { cpu: 50m, memory: 128Mi }, limits: { cpu: 500m, memory: 384Mi } }
+
+dashboard:
+  replicas: 1
+  resources: { requests: { cpu: 10m, memory: 32Mi }, limits: { cpu: 200m, memory: 96Mi } }

@@ -1,0 +1,8 @@
+Storefront : {{ .Values.urls.shop }}
+Dashboard  : {{ .Values.urls.dashboard }}
+MCP URL    : {{ .Values.urls.dashboard }}/mcp
+
+Dashboard admin login: {{ .Values.gateway.adminEmail }}
+Passwords (generated):
+  kubectl -n {{ .Release.Namespace }} get secret {{ include "platform.secretName" . }} -o jsonpath='{.data.dashboard-admin-password}' | base64 -d; echo
+  kubectl -n {{ .Release.Namespace }} get secret {{ include "platform.secretName" . }} -o jsonpath='{.data.wp-admin-password}' | base64 -d; echo

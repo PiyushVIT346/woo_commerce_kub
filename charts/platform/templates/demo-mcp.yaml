@@ -1,0 +1,5 @@
+{{- range $mode := list "notes" "clock" }}
+---
+{{- $env := printf "- name: PORT\n  value: \"3000\"\n- name: MODE\n  value: %s\n%s" $mode (include "platform.env" (dict "root" $ "name" "MCP_AUTH_TOKEN" "key" "upstream-token")) }}
+{{ include "platform.app" (dict "root" $ "name" (printf "demo-%s" $mode) "component" "upstream" "image" "demo-mcp" "port" 3000 "uid" 1000 "env" $env "resources" $.Values.demoMcp.resources) }}
+{{- end }}

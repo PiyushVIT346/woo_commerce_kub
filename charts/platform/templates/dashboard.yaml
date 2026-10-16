@@ -1,0 +1,1 @@
+{{ include "platform.app" (dict "root" . "name" "dashboard" "component" "frontend" "image" "dashboard" "port" 8080 "uid" 101 "replicas" .Values.dashboard.replicas "env" "- name: TZ\n  value: UTC" "resources" .Values.dashboard.resources) }}

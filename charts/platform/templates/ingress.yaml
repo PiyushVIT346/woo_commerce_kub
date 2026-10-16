@@ -1,0 +1,28 @@
+{{- $shop := (urlParse .Values.urls.shop).hostname }}
+{{- $dash := (urlParse .Values.urls.dashboard).hostname }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: platform
+  {{- with .Values.ingress.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  ingressClassName: {{ .Values.ingress.className }}
+  {{- if .Values.ingress.tls.enabled }}
+  tls:
+    - secretName: {{ .Values.ingress.tls.secretName }}
+      hosts: [{{ $shop }}, {{ $dash }}]
+  {{- end }}
+  rules:
+    - host: {{ $shop }}
+      http:
+        paths:
+          - { path: /, pathType: Prefix, backend: { service: { name: wordpress, port: { number: 80 } } } }
+    - host: {{ $dash }}
+      http:
+        paths:
+          - { path: /api, pathType: Prefix, backend: { service: { name: gateway, port: { number: 8080 } } } }
+          - { path: /mcp, pathType: Prefix, backend: { service: { name: gateway, port: { number: 8080 } } } }
+          - { path: /, pathType: Prefix, backend: { service: { name: dashboard, port: { number: 8080 } } } }

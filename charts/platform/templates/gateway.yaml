@@ -1,0 +1,25 @@
+{{- define "platform.gatewayEnv" -}}
+{{ include "platform.env" (dict "root" . "name" "POSTGRES_PASSWORD" "key" "postgres-password") }}
+- name: PORT
+  value: "8080"
+- name: DATABASE_URL
+  value: postgres://gateway:$(POSTGRES_PASSWORD)@postgres:5432/gateway
+- name: ADMIN_EMAIL
+  value: {{ .Values.gateway.adminEmail | quote }}
+- name: CALL_TIMEOUT_MS
+  value: {{ .Values.gateway.callTimeoutMs | quote }}
+- name: COOKIE_SECURE
+  value: {{ hasPrefix "https" .Values.urls.dashboard | quote }}
+- name: LLM_BASE_URL
+  value: {{ .Values.gateway.llm.baseUrl | quote }}
+- name: LLM_MODEL
+  value: {{ .Values.gateway.llm.model | quote }}
+- name: SEED_SERVERS
+  value: {{ .Values.gateway.seedServers | toJson | quote }}
+{{ include "platform.env" (dict "root" . "name" "ADMIN_PASSWORD" "key" "dashboard-admin-password") }}
+{{ include "platform.env" (dict "root" . "name" "SESSION_SECRET" "key" "session-secret") }}
+{{ include "platform.env" (dict "root" . "name" "ENCRYPTION_KEY" "key" "encryption-key") }}
+{{ include "platform.env" (dict "root" . "name" "UPSTREAM_TOKEN" "key" "upstream-token") }}
+{{ include "platform.env" (dict "root" . "name" "LLM_API_KEY" "key" "llm-api-key") }}
+{{- end -}}
+{{ include "platform.app" (dict "root" . "name" "gateway" "component" "gateway" "image" "gateway" "port" 8080 "uid" 1000 "replicas" .Values.gateway.replicas "env" (include "platform.gatewayEnv" .) "resources" .Values.gateway.resources) }}
