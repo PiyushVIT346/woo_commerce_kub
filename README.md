@@ -13,8 +13,6 @@ Gateway (MCP client) ──► woo-mcp ──REST──► WordPress     (Cluste
                      └─► demo-clock                    (ClusterIP only)
 ```
 
-## Prerequisites
-Docker, [k3d](https://k3d.io), kubectl, Helm 3. Linux/macOS also use `make`; on Windows use `scripts/up.ps1` (install tools with `winget install k3d.k3d Helm.Helm Kubernetes.kubectl`). An LLM key for the chat agent (free Groq or Gemini key, or local Ollama).
 
 ## Start locally (about 5-10 minutes the first time)
 ```bash
