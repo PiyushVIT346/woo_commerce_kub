@@ -15,6 +15,11 @@ A WooCommerce store and a team **MCP gateway** running on Kubernetes. An admin c
 10. [Operations, troubleshooting, known limits](#10-operations-troubleshooting-known-limits)
 
 ---
+##  System Architecture
+
+![WooCommerce Kubernetes MCP Gateway Architecture](./architecture.png)
+
+---
 
 ## 1. About the project
 
@@ -44,6 +49,10 @@ scripts/smoke.sh            Quick curl check of the MCP endpoint
 ---
 
 ## 2. Features implemented
+
+![Data Flow](./data_flow.png)
+![](./storage_flow.png)
+
 
 **Kubernetes and Helm**
 - One Helm chart; `values-local.yaml` and `values-prod.yaml` hold all differences (hosts, registry, storage class, TLS, replicas, resources). No Kustomize.
